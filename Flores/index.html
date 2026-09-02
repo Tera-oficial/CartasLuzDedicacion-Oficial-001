@@ -1,0 +1,870 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Luz de Dedicación 2024</title>
+  
+  <!-- Fuentes elegantes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Pinyon+Script&family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Montserrat', sans-serif;
+      background: #16130f;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    /* ===== PARED / FONDO ===== */
+    .wall {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2.2vh;
+      background: radial-gradient(120% 90% at 50% 32%, #3a332c 0%, #241f1b 55%, #16130f 100%);
+    }
+
+    /* Canvas de polvo flotante */
+    #dustCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ===== MARCO DORADO ===== */
+    .frame {
+      position: relative;
+      z-index: 5;
+      padding: clamp(15px, 3.2vmin, 34px);
+      border-radius: 5px;
+      background: linear-gradient(135deg, #f8dd8a 0%, #c9962c 22%, #8a651a 42%, #f4d873 58%, #b8871f 78%, #f8dd8a 100%);
+      box-shadow: 
+        0 34px 70px rgba(0,0,0,.65),
+        0 6px 14px rgba(0,0,0,.5),
+        inset 0 0 0 3px rgba(120,82,14,.6);
+    }
+
+    .frame::before {
+      content: '';
+      position: absolute;
+      inset: clamp(7px, 1.5vmin, 15px);
+      border: 3px solid rgba(70,48,8,.55);
+      border-radius: 3px;
+      box-shadow: inset 0 0 22px rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,232,158,.4);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .frame::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 5px;
+      background: linear-gradient(115deg, transparent 40%, rgba(255,250,220,.35) 50%, transparent 60%);
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    /* ===== ÁREA DE LA PINTURA ===== */
+    .art {
+      position: relative;
+      height: min(64vh, 117vw);
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      background: #16305f;
+      border-radius: 2px;
+    }
+
+    #sky, #petals {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #sky {
+      z-index: 1;
+      transition: opacity 2s ease;
+    }
+
+    #painting {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      transition: opacity 2s ease;
+    }
+
+    #petals {
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* ===== GIRASOLES ===== */
+    .vg-flower {
+      cursor: pointer;
+    }
+
+    .hit {
+      fill: transparent;
+    }
+
+    @keyframes vgSway {
+      0%, 100% { transform: rotate(var(--s)); }
+      50% { transform: rotate(calc(var(--s) * -1)); }
+    }
+
+    .sway {
+      transform-box: fill-box;
+      transform-origin: 50% 100%;
+      animation: vgSway var(--dur, 9s) ease-in-out var(--del, 0s) infinite;
+    }
+
+    .bloom {
+      transform-box: fill-box;
+      transform-origin: 50% 50%;
+      transition: transform .7s cubic-bezier(.3, 1.3, .5, 1);
+    }
+
+    .vg-flower.open .petals {
+      transform-box: fill-box;
+      transform-origin: 50% 50%;
+      animation: petalSpread .7s cubic-bezier(.3,1.3,.5,1) forwards;
+    }
+
+    @keyframes petalSpread {
+      0%   { transform: scale(1) rotate(0); }
+      55%  { transform: scale(1.22) rotate(7deg); }
+      100% { transform: scale(1.14) rotate(4deg); }
+    }
+
+    .vg-flower.open .core {
+      transform-box: fill-box;
+      transform-origin: 50% 50%;
+      animation: coreGlow .7s ease forwards;
+    }
+
+    @keyframes coreGlow {
+      to { transform: scale(1.08); }
+    }
+
+    /* Cuando termina la escena */
+    .art.ending #painting,
+    .art.ending #sky {
+      opacity: 0;
+    }
+
+    /* ===== CARTA DORADA FINAL ===== */
+    .gold-letter {
+      position: absolute;
+      inset: 0;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 9%;
+      opacity: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 38%, #fff0c0 0%, #f0cd70 40%, #cf9c34 74%, #a9781f 100%);
+      transition: opacity 2s ease;
+    }
+
+    .gold-letter::after {
+      content: '';
+      position: absolute;
+      inset: 6%;
+      border: 1.5px solid rgba(120,82,20,.4);
+      box-shadow: inset 0 0 40px rgba(150,100,20,.3);
+      pointer-events: none;
+    }
+
+    .gold-letter.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .gl-inner {
+      text-align: center;
+      color: #5a3d10;
+      transform: translateY(16px);
+      transition: transform 1.6s ease;
+    }
+
+    .gold-letter.show .gl-inner {
+      transform: none;
+    }
+
+    .gl-orn {
+      font-size: clamp(1rem, 3vw, 1.5rem);
+      color: rgba(120,82,20,.6);
+      margin-bottom: clamp(.6rem, 2vh, 1.2rem);
+      letter-spacing: .4em;
+    }
+
+    .gl-line {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: clamp(1.05rem, 3.6vw, 1.7rem);
+      line-height: 1.5;
+      color: #6a4712;
+      margin: 0.3em 0;
+    }
+
+    .gl-firma {
+      margin-top: clamp(1.2rem, 4vh, 2.4rem);
+      font-family: 'Pinyon Script', cursive;
+      font-size: clamp(2.1rem, 8.5vw, 4rem);
+      line-height: 1.1;
+      color: #7a4e12;
+      text-shadow: 0 2px 3px rgba(120,82,20,.3);
+    }
+
+    /* ===== PLACA Y HINT ===== */
+    .plaque {
+      padding: .5em 1.4em;
+      background: linear-gradient(#d9b45a, #b98c2e);
+      color: #3a2708;
+      font-size: clamp(.6rem, 2vw, .74rem);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      border-radius: 3px;
+      box-shadow: 0 4px 10px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,240,190,.6);
+      transition: opacity .8s ease;
+      z-index: 10;
+    }
+
+    .hint {
+      font-size: clamp(.62rem, 2.2vw, .78rem);
+      letter-spacing: .28em;
+      text-transform: uppercase;
+      color: rgba(240,224,180,.85);
+      text-shadow: 0 2px 8px rgba(0,0,0,.7);
+      animation: hintPulse 2.6s ease-in-out infinite;
+      transition: opacity .6s ease;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    @keyframes hintPulse {
+      0%, 100% { opacity: .9; }
+      50% { opacity: .4; }
+    }
+
+    .gone {
+      opacity: 0 !important;
+    }
+
+    /* ===== BOTÓN REPLAY ===== */
+    .replay {
+      position: fixed;
+      left: 50%;
+      bottom: 3vh;
+      transform: translateX(-50%);
+      padding: .72em 1.5em;
+      border-radius: 999px;
+      border: 1px solid rgba(200,160,70,.5);
+      background: rgba(30,24,16,.7);
+      color: #e8cf8a;
+      font: 500 0.7rem Montserrat, sans-serif;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .8s ease, background .3s;
+      z-index: 20;
+    }
+
+    .replay.show {
+      opacity: 1;
+    }
+
+    .replay:hover {
+      background: rgba(50,40,24,.9);
+    }
+
+    /* ===== LOADER ===== */
+    #loader {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(160deg, #16305f 0%, #2f6fb0 45%, #e8b53a 100%);
+      transition: opacity 0.5s ease;
+    }
+
+    #loader.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOADER -->
+  <div id="loader">
+    <svg class="animate-pulse" width="80" height="80" viewBox="0 0 48 48" style="filter: drop-shadow(0 4px 12px rgba(10,25,50,.5)); margin-bottom: 20px;">
+      <g transform="translate(24,24)" fill="#f4c430">
+        <g transform="rotate(0)"><ellipse cx="0" cy="-14" rx="3.6" ry="8.6"/></g>
+        <g transform="rotate(30)"><ellipse cx="0" cy="-14" rx="3.6" ry="8.6"/></g>
+        <g transform="rotate(60)"><ellipse cx="0" cy="-14" rx="3.6" ry="8.6"/></g>
+        <g transform="rotate(90)"><ellipse cx="0" cy="-14" rx="3.6" ry="8.6"/></g>
+        <g transform="rotate(120)"><ellipse cx="0" cy="-14" rx="3.6" ry="8.6"/></g>
+        <g transform="rotate(150)"><ellipse cx="0" cy="-14" rx="3.6" ry="8.6"/></g>
+        <g transform="rotate(180)"><ellipse cx="0" cy="-14" rx="3.6" ry="8.6"/></g>
+        <g transform="rotate(210)"><ellipse cx="0" cy="-14" rx="3.6" ry="8.6"/></g>
+        <g transform="rotate(240)"><ellipse cx="0" cy="-14" rx="3.6" ry="8.6"/></g>
+        <g transform="rotate(270)"><ellipse cx="0" cy="-14" rx="3.6" ry="8.6"/></g>
+        <g transform="rotate(300)"><ellipse cx="0" cy="-14" rx="3.6" ry="8.6"/></g>
+        <g transform="rotate(330)"><ellipse cx="0" cy="-14" rx="3.6" ry="8.6"/></g>
+      </g>
+      <circle cx="24" cy="24" r="8.2" fill="#6b551d"/>
+      <circle cx="24" cy="24" r="8.2" fill="none" stroke="#3a2c0c" stroke-width="1.4"/>
+      <circle cx="24" cy="24" r="4.6" fill="none" stroke="rgba(255,225,150,0.35)" stroke-width="1.6"/>
+    </svg>
+    <span style="color:#fdf3d0; font-family:'Cormorant Garamond',serif; font-style:italic; letter-spacing:.32em; text-shadow:0 2px 12px rgba(10,25,50,.6); text-transform:uppercase; font-size:14px;">
+      Cargando...
+    </span>
+  </div>
+
+  <div class="wall">
+    <canvas id="dustCanvas"></canvas>
+
+    <div class="frame">
+      <div class="art" id="art">
+        <!-- Cielo (WebGL o fallback) -->
+        <canvas id="sky"></canvas>
+
+        <!-- Pintura SVG -->
+        <svg id="painting" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="oil" x="-25%" y="-25%" width="150%" height="150%">
+              <feTurbulence type="turbulence" baseFrequency="0.015 0.021" numOctaves="2" seed="4" result="t"/>
+              <feDisplacementMap in="SourceGraphic" in2="t" scale="7" xChannelSelector="R" yChannelSelector="G" result="d"/>
+              <feGaussianBlur in="d" stdDeviation="0.5"/>
+            </filter>
+            <filter id="oilVase" x="-20%" y="-20%" width="140%" height="140%">
+              <feTurbulence type="turbulence" baseFrequency="0.02 0.028" numOctaves="2" seed="9" result="t"/>
+              <feDisplacementMap in="SourceGraphic" in2="t" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+            </filter>
+            <linearGradient id="vaseG" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#b47e26"/>
+              <stop offset="45%" stop-color="#e6b954"/>
+              <stop offset="55%" stop-color="#eec25a"/>
+              <stop offset="100%" stop-color="#9c6a1c"/>
+            </linearGradient>
+            <linearGradient id="tableG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#c99a3c"/>
+              <stop offset="100%" stop-color="#8a6320"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Mesa -->
+          <rect id="table" x="0" y="700" width="600" height="100" fill="url(#tableG)"/>
+          <line x1="0" y1="700" x2="600" y2="712" stroke="rgba(80,50,10,0.5)" stroke-width="4"/>
+
+          <!-- Grupo de flores (se generan por JS) -->
+          <g id="flowers"></g>
+
+          <!-- Jarrón -->
+          <g id="vase" filter="url(#oilVase)">
+            <path d="M 232 585 C 232 600 236 610 244 618 L 236 700 Q 300 716 364 700 L 356 618 C 364 610 368 600 368 585 Q 300 600 232 585 Z" 
+                  fill="url(#vaseG)" stroke="rgba(90,55,10,0.5)" stroke-width="3"/>
+            <path d="M 240 655 Q 300 668 360 655" fill="none" stroke="rgba(90,55,10,0.45)" stroke-width="4"/>
+            <ellipse cx="300" cy="586" rx="68" ry="12" fill="#a8721e"/>
+            <text x="252" y="680" font-family="'Pinyon Script', cursive" font-size="26" fill="rgba(90,55,10,0.7)">Vincent</text>
+          </g>
+        </svg>
+
+        <!-- Canvas de pétalos -->
+        <canvas id="petals"></canvas>
+
+        <!-- Carta dorada final -->
+        <div class="gold-letter" id="letter">
+          <div class="gl-inner">
+            <div class="gl-orn">✦</div>
+            <!-- Las líneas se insertan por JS -->
+            <p class="gl-firma" id="glFirma"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Placa y pista -->
+    <div class="plaque" id="plaque">Luz de Dedicación 2024</div>
+    <div class="hint" id="hint">
+      <span id="hintText">Toca los girasoles</span>
+    </div>
+  </div>
+
+  <!-- Botón de reinicio -->
+  <button class="replay" id="replay" type="button" hidden>↻ Volver a pintar</button>
+
+  <script>
+    // =====================================================
+    // CONFIGURACIÓN PERSONALIZABLE
+    // =====================================================
+    let pageTitle   = "Luz de Dedicación 2024";
+    let plaqueText  = "Luz de Dedicación 2024";
+    let hintText    = "Toca los girasoles";
+    let letterLines = [
+      "Pinté la luz de un campo entero…",
+      "pero ninguna flor brillaba como tú."
+    ];
+    let signature   = "Con cariño";
+
+    // =====================================================
+    // APLICAR TEXTOS
+    // =====================================================
+    function applyContent() {
+      document.title = pageTitle;
+      const plaque = document.getElementById("plaque");
+      if (plaque) plaque.textContent = plaqueText;
+
+      const hint = document.getElementById("hintText");
+      if (hint) hint.textContent = hintText;
+
+      const firma = document.getElementById("glFirma");
+      if (firma) {
+        // Limpiar líneas anteriores
+        const parent = firma.parentNode;
+        parent.querySelectorAll(".gl-line").forEach(el => el.remove());
+
+        // Insertar nuevas líneas antes de la firma
+        letterLines.forEach(line => {
+          const p = document.createElement("p");
+          p.className = "gl-line";
+          p.textContent = line;
+          parent.insertBefore(p, firma);
+        });
+
+        firma.textContent = signature;
+      }
+    }
+
+    // =====================================================
+    // FUNCIÓN PARA PERSONALIZAR DESDE AFUERA
+    // =====================================================
+    // Función opcional para personalizar textos desde fuera
+    window.actualizarContenido = function(data) {
+      if (data.pageTitle)   pageTitle   = data.pageTitle;
+      if (data.plaqueText)  plaqueText  = data.plaqueText;
+      if (data.hintText)    hintText    = data.hintText;
+      if (data.letterLines) letterLines = Array.isArray(data.letterLines) ? data.letterLines : String(data.letterLines).split("\n").map(l => l.trim()).filter(Boolean);
+      if (data.signature)   signature   = data.signature;
+      applyContent();
+    };
+
+    // =====================================================
+    // INICIO DE LA ESCENA
+    // =====================================================
+    function startTemplate() {
+      applyContent();
+
+      const NS = "http://www.w3.org/2000/svg";
+      const TWO_PI = Math.PI * 2;
+
+      // ---------- Paletas de color de los girasoles ----------
+      const palettes = [
+        { p1: "#f4c430", p2: "#c07d12", ctr: "#6b551d", ctr2: "#3a2c0c" },
+        { p1: "#e8a31c", p2: "#d99a1a", ctr: "#5a4a18", ctr2: "#2c2109" },
+        { p1: "#f6d24a", p2: "#e0aa24", ctr: "#7a6320", ctr2: "#453212" },
+        { p1: "#e6b32a", p2: "#b8850f", ctr: "#4e3f14", ctr2: "#332610" }
+      ];
+
+      // ---------- Datos de cada flor (posición, inclinación, tamaño) ----------
+      const flowerData = [
+        { x: 300, lean: -3,  len: 345, R: 96, type: "full" },
+        { x: 291, lean: -23, len: 306, R: 82, type: "full" },
+        { x: 309, lean: 21,  len: 300, R: 80, type: "full" },
+        { x: 286, lean: -40, len: 262, R: 70, type: "half" },
+        { x: 314, lean: 37,  len: 256, R: 74, type: "full" },
+        { x: 300, lean: -9,  len: 208, R: 66, type: "half" },
+        { x: 283, lean: -55, len: 214, R: 58, type: "full" },
+        { x: 317, lean: 51,  len: 208, R: 58, type: "half" },
+        { x: 300, lean: 7,   len: 150, R: 62, type: "full" }
+      ];
+
+      // ---------- Crear un girasol SVG ----------
+      function createFlower(radius, type, palette) {
+        const petalsCount = type === "half" ? 13 : 19;
+        const petalLen = type === "half" ? 0.42 * radius : 0.82 * radius;
+        const petalW = 0.15 * radius;
+        const coreR = 0.3 * radius;
+
+        let petalsHTML = "";
+        for (let i = 0; i < petalsCount; i++) {
+          const angle = (i / petalsCount) * 360;
+          const color = i % 2 ? palette.p1 : palette.p2;
+          const len = petalLen * (0.85 + 0.3 * Math.random());
+          petalsHTML += `
+            <g transform="rotate(${angle})">
+              <path d="M ${-0.5 * petalW} ${-coreR} 
+                       Q ${-petalW} ${-coreR - 0.5 * len} 0 ${-coreR - len} 
+                       Q ${petalW} ${-coreR - 0.5 * len} ${0.5 * petalW} ${-coreR} Z"
+                    fill="${color}" stroke="rgba(90,60,10,0.25)" stroke-width="1.2"/>
+            </g>`;
+        }
+
+        // Puntos del centro
+        let dots = "";
+        for (let t = 1; t <= 3; t++) {
+          const r = 0.3 * radius * (t / 3.4);
+          const count = 6 + 5 * t;
+          for (let s = 0; s < count; s++) {
+            const a = (s / count) * TWO_PI + t;
+            dots += `<circle cx="${(Math.cos(a) * r).toFixed(1)}" 
+                             cy="${(Math.sin(a) * r).toFixed(1)}" 
+                             r="${(0.028 * radius).toFixed(1)}" 
+                             fill="${t % 2 ? palette.ctr2 : "#5c7a2a"}"/>`;
+          }
+        }
+
+        return `
+          <g class="petals">
+            ${petalsHTML}
+            <circle r="${coreR}" fill="${palette.ctr}"/>
+            <circle r="${coreR * 0.55}" fill="none" stroke="${palette.ctr2}" stroke-width="${0.05 * radius}"/>
+            ${dots}
+            <circle cx="${-0.3 * coreR}" cy="${-0.3 * coreR}" r="${0.28 * coreR}" fill="rgba(255,225,150,0.25)"/>
+          </g>`;
+      }
+
+      // ---------- Generar todas las flores ----------
+      const flowersGroup = document.getElementById("flowers");
+      const flowers = [];
+
+      flowerData
+        .map((f, i) => ({ ...f, i }))
+        .sort((a, b) => b.len - a.len)
+        .forEach((f, idx) => {
+          const palette = palettes[f.i % palettes.length];
+          const g = document.createElementNS(NS, "g");
+          g.setAttribute("class", "vg-flower");
+          g.setAttribute("transform", `translate(${f.x} 590) rotate(${f.lean})`);
+          g.setAttribute("filter", "url(#oil)");
+
+          // Tallo
+          const stemBend = 24 * (Math.random() - 0.5);
+          const stem = `
+            <path d="M 0 0 Q ${stemBend} ${-0.5 * f.len} 0 ${-f.len}"
+                  fill="none" stroke="#5c7a2a" stroke-width="9" stroke-linecap="round"/>
+            <path d="M 0 0 C -40 ${-0.5 * f.len - 8} -34 ${-0.5 * f.len - 52} -18 ${-0.5 * f.len - 30}
+                     C -6 ${-0.5 * f.len - 16} 0 ${-0.5 * f.len - 6} 0 0"
+                  fill="#5c7a2a"/>`;
+
+          const swayAmount = (2 + 1.6 * Math.random()).toFixed(2);
+          const duration = (7 + 5 * Math.random()).toFixed(1);
+          const delay = (-5 * Math.random()).toFixed(1);
+
+          g.innerHTML = `
+            <g class="sway" style="--s:${swayAmount}deg; --dur:${duration}s; --del:${delay}s">
+              ${stem}
+              <g class="bloom" transform="translate(0 ${-f.len})">
+                ${createFlower(f.R, f.type, palette)}
+              </g>
+            </g>
+            <circle class="hit" r="${f.R * 1.1}" fill="transparent"/>
+          `;
+
+          flowersGroup.appendChild(g);
+
+          const rad = f.lean * Math.PI / 180;
+          flowers.push({
+            g,
+            palette,
+            R: f.R,
+            open: false,
+            bx: f.x + Math.sin(rad) * f.len,
+            by: 590 - Math.cos(rad) * f.len
+          });
+        });
+
+      // ---------- Canvas de pétalos ----------
+      const petalsCanvas = document.getElementById("petals");
+      const pctx = petalsCanvas.getContext("2d");
+      let petals = [];
+      let cw = 0, ch = 0, dpr = 1;
+
+      // ---------- Canvas de polvo ----------
+      const dustCanvas = document.getElementById("dustCanvas");
+      const dctx = dustCanvas.getContext("2d");
+      const dust = [];
+      let dw = 0, dh = 0;
+
+      function resize() {
+        dpr = Math.min(2, window.devicePixelRatio || 1);
+        const rect = document.getElementById("art").getBoundingClientRect();
+        cw = rect.width;
+        ch = rect.height;
+
+        [petalsCanvas, document.getElementById("sky")].forEach(c => {
+          c.width = Math.floor(cw * dpr);
+          c.height = Math.floor(ch * dpr);
+        });
+        pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        dw = window.innerWidth;
+        dh = window.innerHeight;
+        dustCanvas.width = Math.floor(dw * dpr);
+        dustCanvas.height = Math.floor(dh * dpr);
+        dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      // ---------- Crear partículas de polvo ----------
+      (function initDust() {
+        const count = window.innerWidth > 768 ? 80 : 40;
+        for (let i = 0; i < count; i++) {
+          const big = Math.random() > 0.85;
+          dust.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            vx: 0.15 * (Math.random() - 0.5),
+            vy: -(0.2 * Math.random() + 0.05),
+            r: big ? 6 * Math.random() + 4 : 2 * Math.random() + 1,
+            alpha: big ? 0.15 * Math.random() + 0.05 : 0.4 * Math.random() + 0.1,
+            sway: Math.random() * TWO_PI,
+            swaySpeed: 0.01 * Math.random() + 0.005
+          });
+        }
+      })();
+
+      window.addEventListener("resize", resize);
+      resize();
+
+      // ---------- Soltar pétalos ----------
+      function releasePetals(flower, count) {
+        const scale = cw / 600;
+        const origin = {
+          x: flower.bx / 600 * cw,
+          y: flower.by / 800 * ch
+        };
+
+        for (let i = 0; i < count; i++) {
+          const angle = Math.random() * TWO_PI;
+          petals.push({
+            x: origin.x + Math.cos(angle) * flower.R * 0.4 * scale,
+            y: origin.y + Math.sin(angle) * flower.R * 0.4 * scale,
+            vx: Math.cos(angle) * (0.5 + Math.random()) * scale,
+            vy: (0.6 * Math.random() - 0.2) * scale,
+            rot: Math.random() * TWO_PI,
+            vr: 0.12 * (Math.random() - 0.5),
+            size: flower.R * (0.18 + 0.14 * Math.random()) * scale,
+            color: Math.random() < 0.5 ? flower.palette.p1 : flower.palette.p2,
+            sway: Math.random() * TWO_PI,
+            life: 1
+          });
+        }
+      }
+
+      // ---------- Audio suave ----------
+      let audioCtx = null;
+      function getAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) audioCtx = new AC();
+        }
+        if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+        return audioCtx;
+      }
+
+      function playBloomSound() {
+        const ctx = getAudio();
+        if (!ctx) return;
+
+        const duration = 0.5;
+        const buffer = ctx.createBuffer(1, ctx.sampleRate * duration | 0, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (2 * Math.random() - 1) * Math.pow(1 - i / data.length, 2);
+        }
+
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.value = 1400;
+        filter.Q.value = 0.8;
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(1e-4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(1e-4, ctx.currentTime + duration);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        src.start();
+      }
+
+      function playFinalChord() {
+        const ctx = getAudio();
+        if (!ctx) return;
+        const notes = [261.6, 329.6, 392, 523.3]; // C mayor
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          osc.type = "sine";
+          osc.frequency.value = freq;
+
+          const gain = ctx.createGain();
+          const t = ctx.currentTime + 0.35 * i;
+          gain.gain.setValueAtTime(1e-4, t);
+          gain.gain.exponentialRampToValueAtTime(0.06, t + 1.5);
+          gain.gain.exponentialRampToValueAtTime(1e-4, t + 6);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 6.2);
+        });
+      }
+
+      // ---------- Lógica de clics ----------
+      let openedCount = 0;
+      let finished = false;
+      const hintEl = document.getElementById("hint");
+
+      function finishScene() {
+        if (finished) return;
+        finished = true;
+
+        // Soltar muchos pétalos de todos
+        flowers.forEach(f => releasePetals(f, 10));
+        playFinalChord();
+
+        document.getElementById("art").classList.add("ending");
+        document.getElementById("plaque").classList.add("gone");
+        hintEl.classList.add("gone");
+
+        setTimeout(() => {
+          document.getElementById("letter").classList.add("show");
+        }, 900);
+
+        setTimeout(() => {
+          const btn = document.getElementById("replay");
+          btn.hidden = false;
+          requestAnimationFrame(() => btn.classList.add("show"));
+        }, 2600);
+      }
+
+      flowers.forEach(flower => {
+        flower.g.addEventListener("click", () => {
+          if (flower.open || finished) return;
+
+          flower.open = true;
+          flower.g.classList.add("open");
+          releasePetals(flower, 7 + Math.floor(5 * Math.random()));
+          playBloomSound();
+
+          openedCount++;
+          hintEl.classList.add("gone");
+
+          if (openedCount >= flowers.length) {
+            setTimeout(finishScene, 1100);
+          }
+        });
+      });
+
+      // ---------- Botón de reinicio ----------
+      document.getElementById("replay").addEventListener("click", () => location.reload());
+
+      // ---------- Loop de animación ----------
+      const startTime = performance.now();
+
+      function animate(now) {
+        // Pétalos
+        pctx.clearRect(0, 0, cw, ch);
+        for (let i = petals.length - 1; i >= 0; i--) {
+          const p = petals[i];
+          p.vy += (cw / 600) * 0.03;
+          p.sway += 0.05;
+          p.x += p.vx + 0.4 * Math.sin(p.sway) * (cw / 600);
+          p.y += p.vy;
+          p.rot += p.vr;
+          p.life -= 0.006;
+
+          if (p.life <= 0 || p.y > ch + 40) {
+            petals.splice(i, 1);
+            continue;
+          }
+
+          pctx.save();
+          pctx.translate(p.x, p.y);
+          pctx.rotate(p.rot);
+          pctx.globalAlpha = Math.max(0, Math.min(1, 1.6 * p.life));
+          pctx.fillStyle = p.color;
+          pctx.beginPath();
+          pctx.moveTo(0, -p.size);
+          pctx.quadraticCurveTo(0.5 * p.size, -0.2 * p.size, 0, p.size);
+          pctx.quadraticCurveTo(-0.5 * p.size, -0.2 * p.size, 0, -p.size);
+          pctx.fill();
+          pctx.restore();
+        }
+
+        // Polvo
+        dctx.clearRect(0, 0, dw, dh);
+        dust.forEach(d => {
+          d.sway += d.swaySpeed;
+          d.x += d.vx + 0.2 * Math.sin(d.sway);
+          d.y += d.vy;
+
+          if (d.y < -15) d.y = dh + 15;
+          if (d.y > dh + 15) d.y = -15;
+          if (d.x < -15) d.x = dw + 15;
+          if (d.x > dw + 15) d.x = -15;
+
+          const grad = dctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, d.r);
+          grad.addColorStop(0, `rgba(255, 225, 150, ${d.alpha})`);
+          grad.addColorStop(0.4, `rgba(255, 200, 100, ${0.6 * d.alpha})`);
+          grad.addColorStop(1, "rgba(255, 170, 50, 0)");
+          dctx.beginPath();
+          dctx.fillStyle = grad;
+          dctx.arc(d.x, d.y, d.r, 0, TWO_PI);
+          dctx.fill();
+        });
+
+        requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+
+      // Ocultar loader
+      const loader = document.getElementById("loader");
+      if (loader) {
+        loader.style.opacity = "0";
+        setTimeout(() => loader.classList.add("hidden"), 500);
+      }
+    }
+
+    // Arrancar cuando todo esté listo
+    window.addEventListener("load", () => {
+      startTemplate();
+    });
+  </script>
+</body>
+</html>
