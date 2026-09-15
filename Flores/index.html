@@ -283,6 +283,17 @@
       z-index: 10;
     }
 
+    .scroll-hint {
+      display: block;
+      margin-top: .8rem;
+      color: rgba(240,224,180,.72);
+      font-size: clamp(.62rem, 2vw, .76rem);
+      letter-spacing: .12em;
+      text-align: center;
+      text-transform: none;
+      text-shadow: 0 2px 8px rgba(0,0,0,.7);
+    }
+
     .love-message-under {
       position: absolute;
       left: 50%;
@@ -453,6 +464,7 @@
     <div class="plaque" id="plaque">Toma, para ti 😊</div>
     <div class="hint" id="hint">
       <span id="hintText">Toca los girasoles</span>
+      <span class="scroll-hint">Desplázate hacia abajo para ver la carta</span>
     </div>
   </div>
 
