@@ -1,10 +1,14 @@
 
 <!DOCTYPE html>
+
+<!-- Variable: loveText | text | Valor por defecto: Pinté la luz de un campo entero…\npero ninguna flor brillaba como tú. | Descripción: Mensaje que aparece en la carta final; usa saltos de línea para separar frases | Título: Mensaje de la Carta -->
+<!-- Variable: url-yt | url-yt | Valor por defecto: https://youtu.be/IVEWT2WI61E?si=Fpg3DoohzybRET9T | Descripción: Link de la música de YouTube que inicia al tocar una flor | Título: Elige qué música ponemos -->
+
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Luz de Dedicación 2024</title>
+  <title>Toma, para ti 😊</title>
   
   <!-- Fuentes elegantes -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -119,6 +123,16 @@
 
     #petals {
       z-index: 3;
+      pointer-events: none;
+    }
+
+    #youtube-container {
+      position: fixed;
+      width: 1px;
+      height: 1px;
+      top: -10px;
+      left: -10px;
+      opacity: 0;
       pointer-events: none;
     }
 
@@ -415,7 +429,7 @@
     </div>
 
     <!-- Placa y pista -->
-    <div class="plaque" id="plaque">Luz de Dedicación 2024</div>
+    <div class="plaque" id="plaque">Toma, para ti 😊</div>
     <div class="hint" id="hint">
       <span id="hintText">Toca los girasoles</span>
     </div>
@@ -423,19 +437,46 @@
 
   <!-- Botón de reinicio -->
   <button class="replay" id="replay" type="button" hidden>↻ Volver a pintar</button>
+  <div id="youtube-container" aria-hidden="true"></div>
 
   <script>
     // =====================================================
     // CONFIGURACIÓN PERSONALIZABLE
     // =====================================================
-    let pageTitle   = "Luz de Dedicación 2024";
-    let plaqueText  = "Luz de Dedicación 2024";
+    let pageTitle   = "Toma, para ti 😊";
+    let plaqueText  = "Toma, para ti 😊";
     let hintText    = "Toca los girasoles";
     let letterLines = [
       "Pinté la luz de un campo entero…",
       "pero ninguna flor brillaba como tú."
     ];
     let signature   = "Con cariño";
+    let youtubeUrl  = "https://youtu.be/IVEWT2WI61E?si=Fpg3DoohzybRET9T";
+
+    function readJsonParams() {
+      const rawJson = new URLSearchParams(window.location.search).get("json");
+      if (!rawJson) return {};
+
+      try {
+        return JSON.parse(rawJson);
+      } catch (error) {
+        try {
+          return JSON.parse(decodeURIComponent(rawJson));
+        } catch (decodedError) {
+          console.warn("No se pudo leer el parámetro json:", decodedError);
+          return {};
+        }
+      }
+    }
+
+    function extractYoutubeId(url) {
+      if (!url) return "";
+      const value = String(url).trim();
+      if (/^[A-Za-z0-9_-]{11}$/.test(value)) return value;
+
+      const match = value.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+      return match ? match[1] : "";
+    }
 
     // =====================================================
     // APLICAR TEXTOS
@@ -471,13 +512,50 @@
     // =====================================================
     // Función opcional para personalizar textos desde fuera
     window.actualizarContenido = function(data) {
-      if (data.pageTitle)   pageTitle   = data.pageTitle;
-      if (data.plaqueText)  plaqueText  = data.plaqueText;
-      if (data.hintText)    hintText    = data.hintText;
-      if (data.letterLines) letterLines = Array.isArray(data.letterLines) ? data.letterLines : String(data.letterLines).split("\n").map(l => l.trim()).filter(Boolean);
-      if (data.signature)   signature   = data.signature;
+      if (data.loveText)    letterLines = String(data.loveText).split("\n").map(line => line.trim()).filter(Boolean);
+      if (data["url-yt"])   youtubeUrl  = data["url-yt"];
       applyContent();
     };
+
+    const urlContent = readJsonParams();
+    window.actualizarContenido(urlContent);
+
+    let youtubePlayer = null;
+    let musicRequested = false;
+
+    window.onYouTubeIframeAPIReady = function() {
+      const videoId = extractYoutubeId(youtubeUrl);
+      if (!videoId) return;
+
+      youtubePlayer = new YT.Player("youtube-container", {
+        height: "1",
+        width: "1",
+        videoId,
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          loop: 1,
+          playlist: videoId,
+          rel: 0,
+          playsinline: 1
+        },
+        events: {
+          onReady: event => {
+            event.target.setVolume(50);
+            if (musicRequested) event.target.playVideo();
+          }
+        }
+      });
+    };
+
+    const youtubeApiScript = document.createElement("script");
+    youtubeApiScript.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(youtubeApiScript);
+
+    function playPersonalizedMusic() {
+      musicRequested = true;
+      if (youtubePlayer && youtubePlayer.playVideo) youtubePlayer.playVideo();
+    }
 
     // =====================================================
     // INICIO DE LA ESCENA
@@ -776,6 +854,7 @@
         flower.g.addEventListener("click", () => {
           if (flower.open || finished) return;
 
+          playPersonalizedMusic();
           flower.open = true;
           flower.g.classList.add("open");
           releasePetals(flower, 7 + Math.floor(5 * Math.random()));
