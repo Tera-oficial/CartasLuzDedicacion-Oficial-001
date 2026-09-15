@@ -24,8 +24,9 @@
 
     body, html {
       width: 100%;
-      height: 100%;
-      overflow: hidden;
+      min-height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
       font-family: 'Montserrat', sans-serif;
       background: #16130f;
       -webkit-user-select: none;
@@ -35,8 +36,9 @@
 
     /* ===== PARED / FONDO ===== */
     .wall {
-      position: fixed;
-      inset: 0;
+      position: relative;
+      min-height: 100vh;
+      padding: 4vh 0 14vh;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -282,7 +284,7 @@
     }
 
     .love-message-under {
-      position: fixed;
+      position: absolute;
       left: 50%;
       top: calc(50% + min(32vh, 58.5vw) + clamp(50px, 8vh, 80px));
       width: min(88vw, 560px);
