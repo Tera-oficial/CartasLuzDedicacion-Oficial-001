@@ -73,6 +73,24 @@ h1 {
   background: #6e1324;
   transform: translateY(-2px);
 }
+
+.hidden-flower-link {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--crimson);
+  opacity: .08;
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+.hidden-flower-link:hover,
+.hidden-flower-link:focus-visible {
+  opacity: 1;
+  transform: scale(1.2);
+}
   </style>
 </head>
 <body>
@@ -81,6 +99,8 @@ h1 {
     <h1>Luz De Dedicación Cartas 001</h1>
     <a href="https://luzdedicacion.pages.dev/" class="btn-primary" target="_blank" rel="noopener noreferrer">Visitar Sitio</a>
   </main>
+
+  <a href="Flores/index.html" class="hidden-flower-link" aria-label="Abrir experiencia de flores" title="Abrir experiencia de flores"></a>
 
   <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "559ad2130c9043bc88fc81c584570d64"}'></script>
   </body>
