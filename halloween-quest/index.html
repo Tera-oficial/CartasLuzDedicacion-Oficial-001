@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<!-- Variable: pregunta | text | Valor por defecto: ¿Salimos este 31 a pedir dulces? 🎃 | Descripción: Pregunta principal de la invitación | Título: Pregunta -->
+<!-- Variable: frasesNo | array | Valor por defecto: ¿En serio vas a decir que no? 👀 | Descripción: Añade todas las frases cortas que quieras, una por respuesta | Título: Frases al decir que no -->
+<!-- Variable: textoDecidido | text | Valor por defecto: ¡Genial, está decidido! 🎉 | Descripción: Título que aparece después de aceptar | Título: Texto de decisión -->
+<!-- Variable: textoFinal | text | Valor por defecto: Nos vemos este Halloween — ¡que no falte el disfraz! 🎃👻 | Descripción: Mensaje que aparece después de aceptar | Título: Mensaje final -->
+<!-- Variable: musicaYoutube | url-yt | Valor por defecto: https://youtu.be/IVEWT2WI61E?si=Fpg3DoohzybRET9T | Descripción: Canción que empieza al pulsar Continuar | Título: Música de entrada -->
+<html lang="es">
+<head>
+  <title>👻Salimos en Halloween?👻😼</title>
+<meta name="description" content="">
+<meta name="theme-color" content="#7A1B2E">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>¿Salimos este 31 a pedir dulces? 🎃</title>
+  <meta name="description" content="Una invitación interactiva para Halloween: el botón 'No' huye y el 'Sí' crece, hasta terminar en confeti y una celebración animada.">
+  <link rel="icon" href="favicon.svg">
+  
+
+  <!-- Google Fonts: Poppins (texto) + Creepster (titulo, solo para dar el toque Halloween sin
+       perder legibilidad en el resto) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Creepster&display=swap" rel="stylesheet">
+
+  <link rel="preload" as="image" href="gato-halloween.jpg">
+  <link rel="preload" as="image" href="respuesta-no-1.jpg">
+
+  <style>
+    /* ════════════════════════════════════════════════════════════════
+       Puerto de templates/me-perdonas con paleta Halloween (oscuro +
+       naranja) y copy nuevo, neutral en genero, pensado para invitar a
+       un amigo o pareja a salir/disfrazarse en Halloween - no es una
+       disculpa ni una propuesta romantica. Mecanica JS intacta (el "No"
+       huye, el "Si" crece, confeti al aceptar) - solo cambian colores,
+       tipografia del titulo y el contenido por defecto. Pedido real
+       2026-10-26, borrador local para revisar antes de llevarlo al
+       catalogo real.
+       ════════════════════════════════════════════════════════════════ */
+    :root {
+      /* Antes 3 de los 5 tonos del fondo eran morados con bastante azul (#1a0a2e, #2d1b4e) -
+         en ciertos puntos del barrido de la animacion ese morado dominaba la pantalla y se leia
+         "azul", no Halloween (pedido real 2026-10-26). Se reemplazan por negros/marrones CALIDOS
+         (sin canal azul) alternados con mas naranja, para que el fondo nunca deje de sentirse
+         naranja-sobre-negro aunque este en el extremo del barrido. */
+      --aurora-color-1: #0d0604; --aurora-color-2: #ff6b00; --aurora-color-3: #2b0f00; --aurora-color-4: #ff9d42; --aurora-color-5: #1a0a02;
+      --container-bg-start: rgba(26, 14, 10, 0.92); --container-bg-end: rgba(10, 6, 4, 0.96);
+      --container-shadow: rgba(255, 107, 0, 0.25);
+      --text-primary: #ffe8d6; --text-secondary: #ffb37b;
+      --btn-yes-start: #ff8c42; --btn-yes-end: #ff6b00; --btn-yes-shadow: #b34700;
+      /* El "No" (#4a2c6d a #2d1b4e) era morado oscuro sobre tarjeta tambien oscura - casi no se
+         veia (pedido real 2026-10-26). Mismo morado pero mucho mas claro/saturado, mas un borde
+         claro, para que contraste de verdad contra la tarjeta y siga leyendose como "el otro
+         boton" distinto del naranja. */
+      --btn-no-start: #a874e8; --btn-no-end: #7b3fd4; --btn-no-shadow: #5226a3;
+      --glow-color: rgba(255, 140, 66, 0.7);
+    }
+
+    /* --- OPTIMIZACIÓN DE CENTRADO Y FLUIDEZ --- */
+    html { height: 100%; }
+    body {
+      margin: 0; padding: 2rem 0; box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100%; /* Usar min-height para permitir el scroll si es necesario */
+      text-align: center; overflow-x: hidden;
+      background: linear-gradient(-45deg, var(--aurora-color-1), var(--aurora-color-2), var(--aurora-color-3), var(--aurora-color-4), var(--aurora-color-5));
+      background-size: 400% 400%;
+      animation: auroraMovement 15s ease infinite;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    @keyframes auroraMovement {
+      0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; }
+    }
+
+    /* --- ESTRUCTURA PARA TRANSICIÓN SUAVE --- */
+    .main-wrapper {
+      display: grid; /* Permite apilar los contenedores uno sobre otro */
+      place-items: center;
+      width: 90%;
+      max-width: 480px;
+    }
+
+    .container {
+      background: linear-gradient(135deg, var(--container-bg-start), var(--container-bg-end));
+      padding: clamp(20px, 5vw, 35px) clamp(25px, 6vw, 45px); /* Padding adaptable */
+      border-radius: 30px;
+      box-shadow: 0 15px 40px var(--container-shadow);
+      border: 1px solid rgba(255, 140, 66, 0.25);
+
+      /* Posicionamiento en la grilla para apilarlos */
+      grid-column: 1 / -1;
+      grid-row: 1 / -1;
+
+      /* --- PROPIEDADES PARA LA ANIMACIÓN DE TRANSICIÓN --- */
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.95);
+      transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
+    }
+
+    /* Clase que hace visible y activo al contenedor */
+    .container.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    #youtube-container {
+      position: fixed;
+      width: 1px;
+      height: 1px;
+      left: -10000px;
+      top: -10000px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .container img {
+      width: clamp(220px, 60vw, 300px); /* Tamaño de imagen adaptable */
+      border-radius: 25px; margin-bottom: 25px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+      transition: transform 0.3s ease;
+    }
+
+    /* El GIF final (gatos-celebracion.gif) tiene fondo transparente de verdad - a diferencia
+       de las fotos, no es "una foto en un marco", es un recorte que flota. El marco/sombra de
+       arriba se veria como un rectangulo fantasma alrededor del espacio vacio del GIF, asi que
+       se le quita aca y se le da mas alto (es vertical, no cuadrado como las demas imagenes). */
+    #final-image {
+      border-radius: 0;
+      box-shadow: none;
+      background: none;
+      width: clamp(200px, 55vw, 280px);
+    }
+    .container img:hover { transform: scale(1.05); }
+
+    h1 {
+      font-family: 'Creepster', 'Poppins', sans-serif;
+      font-size: clamp(1.9em, 6vw, 2.6em); font-weight: 400; letter-spacing: 1px;
+      color: var(--text-primary); margin-bottom: 15px;
+      text-shadow: 0 0 12px var(--glow-color);
+    }
+    p { font-size: clamp(1.1em, 4vw, 1.3em); color: var(--text-secondary); margin-bottom: 35px; }
+
+    .btn-container { display: flex; justify-content: center; gap: clamp(15px, 4vw, 25px); min-height: 70px; }
+
+    .btn {
+      padding: 16px clamp(25px, 6vw, 40px);
+      text-decoration: none; color: white; border-radius: 50px;
+      font-weight: 700; font-size: clamp(1em, 4vw, 1.2em);
+      border: none; cursor: pointer; position: relative;
+      transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+      transform: scale(1); font-family: 'Poppins', sans-serif;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+    .btn:active { transform: translateY(2px) scale(0.98); }
+
+    #btn-si {
+      background: linear-gradient(145deg, var(--btn-yes-start), var(--btn-yes-end));
+      box-shadow: 0 6px 0 var(--btn-yes-shadow), 0 8px 15px rgba(0,0,0,0.4);
+    }
+    #btn-si:hover { transform: translateY(-4px); box-shadow: 0 10px 0 var(--btn-yes-shadow), 0 12px 20px rgba(0,0,0,0.4); }
+
+    #btn-no {
+      background: linear-gradient(145deg, var(--btn-no-start), var(--btn-no-end));
+      box-shadow: 0 6px 0 var(--btn-no-shadow), 0 8px 15px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+    #btn-no:hover { transform: translateY(-4px); box-shadow: 0 10px 0 var(--btn-no-shadow), 0 12px 20px rgba(0,0,0,0.4); }
+
+    #btn-si.btn-pulse::after {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: 50px; background-color: var(--glow-color); z-index: -1;
+        animation: pulseGlow 1.5s infinite;
+    }
+
+    @keyframes pulseGlow {
+      0% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.4); opacity: 0; } 100% { transform: scale(1); opacity: 0.5; }
+    }
+
+    #confetti-canvas {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none; z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <audio id="background-music" src="" loop></audio>
+  <div id="youtube-container" aria-hidden="true"></div>
+  <p id="music-status" class="visually-hidden" role="status" aria-live="polite"></p>
+
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Contenedor principal con la pregunta inicial, la invitación y la respuesta final -->
+  <main class="main-wrapper">
+
+    <div class="container active" id="intro-container">
+      <h1 id="intro-title">¿Lista para una sorpresa?</h1>
+      <div class="btn-container">
+        <button class="btn" id="btn-continuar">Continuar</button>
+      </div>
+    </div>
+
+    <div class="container" id="proposal-container">
+      <img id="image" src="gato-halloween.jpg" alt="Gato disfrazado de Halloween">
+      <h1 id="main-title">¿Salimos este 31 a pedir dulces? 🎃</h1>
+      <div class="btn-container">
+        <button class="btn" id="btn-si">¡Vamos! 🎃</button>
+        <button class="btn" id="btn-no">No</button>
+      </div>
+    </div>
+
+    <div class="container" id="success-container">
+      <!-- Sin src aca a proposito (ver el comentario de mas abajo en el script: el GIF debe
+           arrancar fresco justo cuando se revela) Y para no duplicar el literal (ver comentario
+           del preload en el head) - JS lo asigna en el click de "Si". -->
+      <img id="final-image" alt="Celebración">
+      <h1 id="final-title">¡Genial, está decidido! 🎉</h1>
+      <p id="final-text">Nos vemos este Halloween — ¡que no falte el disfraz! 🎃👻</p>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <script type="application/json" id="dedica-config">[]</script>
+<script>/**
+ * Runtime DEDICA (~1KB) - inyectado por el generador junto al bloque de
+ * config de cada plantilla T2+. Ver docs/00-FIJO/02-contrato-de-plantilla.md.
+ *
+ * Es la UNICA pieza de JS compartida entre publicacion, ZIP/single-file y el
+ * live preview del editor. Se vendoriza (se copia inline en cada plantilla
+ * generada), nunca se carga por red desde una plantilla publicada.
+ */
+(function () {
+  'use strict';
+
+  function isPlainObject(v) {
+    return v !== null && typeof v === 'object' && !Array.isArray(v);
+  }
+
+  /**
+   * Deep merge inmutable. Los arrays se REEMPLAZAN enteros, nunca se
+   * combinan indice a indice (ver la regla en el contrato de plantilla).
+   */
+  function merge(defaults, overrides) {
+    if (!isPlainObject(overrides)) return defaults;
+    var out = Array.isArray(defaults) ? defaults.slice() : Object.assign({}, defaults);
+    for (var key in overrides) {
+      if (!Object.prototype.hasOwnProperty.call(overrides, key)) continue;
+      var a = defaults ? defaults[key] : undefined;
+      var b = overrides[key];
+      out[key] = isPlainObject(a) && isPlainObject(b) ? merge(a, b) : b;
+    }
+    return out;
+  }
+
+  var listeners = {};
+
+  function on(event, cb) {
+    (listeners[event] = listeners[event] || []).push(cb);
+  }
+
+  function emit(event, payload) {
+    (listeners[event] || []).forEach(function (cb) {
+      try { cb(payload); } catch (e) { /* una plantilla rota no debe tumbar el runtime */ }
+    });
+  }
+
+  // Live preview: el editor envia el config actualizado via postMessage.
+  // Hoy no hay ningun caller real (el preview local recarga el iframe
+  // completo por src, ver docs/00-FIJO/07-frontend-react.md y
+  // frontend/src/editor/preview/Preview.tsx) pero el listener se deja
+  // listo para cuando se active, ya validado por origen.
+  //
+  // Este runtime se vendoriza igual en plantillas publicadas, ZIP,
+  // single-file y en el preview del editor, asi que no hay un origin
+  // fijo unico que hardcodear aqui. En su lugar: (1) solo se acepta un
+  // mensaje cuyo `source` sea exactamente window.parent (descarta
+  // ventanas/iframes ajenos que puedan estar posteando al mismo window),
+  // y (2) cuando el navegador expone el origin real del padre
+  // (ancestorOrigins, o su fallback via document.referrer), `ev.origin`
+  // debe coincidir exactamente. Si ninguno de los dos esta disponible
+  // (p.ej. Firefox sin referrer), el chequeo de origin se omite y solo
+  // queda la validacion de `source`.
+  function expectedEditorOrigin() {
+    try {
+      if (window.location.ancestorOrigins && window.location.ancestorOrigins.length) {
+        return window.location.ancestorOrigins[0];
+      }
+    } catch (e) { /* ignorar */ }
+    try {
+      if (document.referrer) return new URL(document.referrer).origin;
+    } catch (e) { /* ignorar */ }
+    return null;
+  }
+
+  window.addEventListener('message', function (ev) {
+    if (ev.source !== window.parent) return;
+    var expected = expectedEditorOrigin();
+    if (expected && ev.origin !== expected) return;
+    if (!ev.data || ev.data.source !== 'dedica-editor') return;
+    if (ev.data.type === 'update') emit('update', ev.data.config);
+  });
+
+  function readConfig() {
+    var el = document.getElementById('dedica-config');
+    if (!el) return {};
+    try {
+      return JSON.parse(el.textContent || '{}');
+    } catch (e) {
+      return {};
+    }
+  }
+
+  window.DEDICA = {
+    merge: merge,
+    on: on,
+    config: readConfig(),
+  };
+})();
+</script>
+  <script>
+    /* ════════════════════════════════════════════════════════════════
+       ██  CAMPOS EDITABLES (schema.json)  ██
+       DEFAULTS = lo que se ve si esta página se abre tal cual, sin
+       ningún config inyectado. CONFIG_FIELDS = DEFAULTS fusionado con lo
+       que el proyecto haya guardado (ver templates/_shared/dedica-runtime.js).
+       ═════════════════════════════════════════════════════════════ */
+    const DEFAULTS = {
+      preguntaInicio: "¿Lista para una sorpresa?",
+      pregunta: "¿Salimos este 31 a pedir dulces? 🎃",
+      frasesNo: ["¿En serio vas a decir que no? 👀"],
+      textoDecidido: "¡Genial, está decidido! 🎉",
+      textoFinal: "Nos vemos este Halloween — ¡que no falte el disfraz! 🎃👻",
+      musicaYoutube: "https://youtu.be/IVEWT2WI61E?si=Fpg3DoohzybRET9T",
+      musicaFinal: "musica-final.mp3",
+      fotoPropuesta: "gato-halloween.jpg",
+      botonSiTexto: "¡Vamos! 🎃",
+      botonNoTexto: "No",
+      fotoFinal: "gatos-bailando.gif",
+    };
+    const CONFIG_FIELDS = (window.DEDICA && window.DEDICA.merge) ? window.DEDICA.merge(DEFAULTS, window.DEDICA.config) : DEFAULTS;
+
+    document.getElementById('intro-title').textContent = CONFIG_FIELDS.preguntaInicio;
+    document.getElementById('main-title').textContent = CONFIG_FIELDS.pregunta;
+    document.getElementById('image').src = CONFIG_FIELDS.fotoPropuesta;
+    document.getElementById('btn-si').textContent = CONFIG_FIELDS.botonSiTexto;
+    document.getElementById('btn-no').textContent = CONFIG_FIELDS.botonNoTexto;
+    document.getElementById('final-title').textContent = CONFIG_FIELDS.textoDecidido;
+    document.getElementById('final-text').textContent = CONFIG_FIELDS.textoFinal;
+    // final-image NO se setea aca a proposito - ver el handler de btn-si: el GIF debe arrancar
+    // desde su primer frame justo cuando se revela, no venir reproduciendose de fondo desde la
+    // carga de la pagina (eso lo desincronizaria de la musica final, que recien arranca ahi).
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const introContainer = document.getElementById('intro-container');
+      const proposalContainer = document.getElementById('proposal-container');
+      const successContainer = document.getElementById('success-container');
+      const btnContinuar = document.getElementById('btn-continuar');
+      const btnSi = document.getElementById('btn-si');
+      const btnNo = document.getElementById('btn-no');
+      const mainTitle = document.getElementById('main-title');
+      const image = document.getElementById('image');
+      const confettiCanvas = document.getElementById('confetti-canvas');
+      const backgroundMusic = document.getElementById('background-music');
+      const youtubeContainer = document.getElementById('youtube-container');
+      const musicStatus = document.getElementById('music-status');
+      const finalImage = document.getElementById('final-image');
+
+      let noClickCount = 0;
+      let siButtonScale = 1;
+      let noButtonScale = 1;
+      let chaseStarted = false;
+      const noPhrases = (Array.isArray(CONFIG_FIELDS.frasesNo) ? CONFIG_FIELDS.frasesNo : DEFAULTS.frasesNo)
+        .filter(phrase => typeof phrase === 'string' && phrase.trim())
+        .map(phrase => phrase.trim());
+      const noImages = ['respuesta-no-1.jpg', 'respuesta-no-2.jpg', 'respuesta-no-3.jpg'];
+
+      function getYoutubeVideoId(value) {
+        const input = String(value || '').trim();
+        try {
+          const url = new URL(input);
+          const host = url.hostname.replace(/^www\./, '').toLowerCase();
+          let videoId = null;
+          if (host === 'youtu.be') {
+            videoId = url.pathname.split('/').filter(Boolean)[0];
+          } else if (['youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtube-nocookie.com'].includes(host)) {
+            if (url.pathname === '/watch') {
+              videoId = url.searchParams.get('v');
+            } else {
+              const parts = url.pathname.split('/').filter(Boolean);
+              if (['embed', 'shorts', 'live'].includes(parts[0])) videoId = parts[1];
+            }
+          }
+          return videoId && /^[A-Za-z0-9_-]{11}$/.test(videoId) ? videoId : null;
+        } catch (error) {
+          return /^[A-Za-z0-9_-]{11}$/.test(input) ? input : null;
+        }
+      }
+
+      function stopYoutubeMusic() {
+        youtubeContainer.innerHTML = '';
+      }
+
+      function startYoutubeMusic() {
+        const videoId = getYoutubeVideoId(CONFIG_FIELDS.musicaYoutube);
+        if (!videoId) {
+          musicStatus.textContent = 'No se pudo iniciar la música de entrada. Revisa la canción configurada.';
+          return;
+        }
+
+        const player = document.createElement('iframe');
+        const playerUrl = new URL(`https://www.youtube.com/embed/${videoId}`);
+        playerUrl.searchParams.set('autoplay', '1');
+        playerUrl.searchParams.set('controls', '0');
+        playerUrl.searchParams.set('loop', '1');
+        playerUrl.searchParams.set('playlist', videoId);
+        playerUrl.searchParams.set('playsinline', '1');
+        playerUrl.searchParams.set('rel', '0');
+        player.src = playerUrl.toString();
+        player.title = 'Música de fondo';
+        player.allow = 'autoplay; encrypted-media';
+        player.tabIndex = -1;
+        youtubeContainer.replaceChildren(player);
+        musicStatus.textContent = '';
+      }
+
+      function triggerConfetti() {
+        const myConfetti = confetti.create(confettiCanvas, { resize: true, useWorker: true });
+        myConfetti({ particleCount: 200, spread: 180, origin: { y: 0.6 }, colors: ['#ff6b00', '#ffa500', '#2d1b4e', '#ffffff', '#8b00ff'] });
+      }
+
+      btnContinuar.addEventListener('click', () => {
+        introContainer.classList.remove('active');
+        proposalContainer.classList.add('active');
+        startYoutubeMusic();
+      });
+
+      btnSi.addEventListener('click', () => {
+        proposalContainer.classList.remove('active');
+        stopYoutubeMusic();
+        backgroundMusic.pause();
+        if (CONFIG_FIELDS.musicaFinal) {
+          backgroundMusic.src = CONFIG_FIELDS.musicaFinal;
+          backgroundMusic.loop = true;
+          backgroundMusic.currentTime = 0;
+          backgroundMusic.play().then(() => {
+            musicStatus.textContent = '';
+          }).catch(error => {
+            console.error('No se pudo iniciar la música final.', error);
+            musicStatus.textContent = 'No se pudo iniciar la música final.';
+          });
+        } else {
+          musicStatus.textContent = 'No hay una canción final configurada.';
+        }
+        finalImage.src = CONFIG_FIELDS.fotoFinal;
+
+        setTimeout(() => {
+          successContainer.classList.add('active');
+          triggerConfetti();
+        }, 150);
+      });
+
+      btnNo.addEventListener('click', () => {
+        const responseIndex = noClickCount++;
+        const phrases = noPhrases.length ? noPhrases : DEFAULTS.frasesNo;
+        mainTitle.textContent = phrases[responseIndex % phrases.length];
+        image.src = noImages[responseIndex % noImages.length];
+
+        if (responseIndex >= phrases.length) {
+          if (!chaseStarted) {
+            btnNo.style.position = 'absolute';
+            chaseStarted = true;
+          }
+
+          siButtonScale += 0.6;
+          btnSi.style.transform = `scale(${siButtonScale})`;
+          btnSi.classList.add('btn-pulse');
+
+          noButtonScale *= 0.8;
+          btnNo.style.transform = `scale(${noButtonScale})`;
+
+          moveButtonRandomly();
+        }
+      });
+
+      function moveButtonRandomly() {
+        const btnContainer = document.querySelector('.btn-container');
+        const containerRect = btnContainer.getBoundingClientRect();
+        const proposalRect = proposalContainer.getBoundingClientRect();
+
+        const btnWidth = btnNo.offsetWidth;
+        const btnHeight = btnNo.offsetHeight;
+
+        const maxLeft = proposalContainer.clientWidth - btnWidth;
+        const maxTop = proposalContainer.clientHeight - btnHeight;
+
+        const newLeft = Math.random() * maxLeft;
+        const newTop = Math.random() * maxTop;
+
+        btnNo.style.left = `${newLeft}px`;
+        btnNo.style.top = `${newTop}px`;
+        btnNo.style.transition = 'all 0.3s ease';
+      }
+    });
+  </script>
+<script>
+  (function () {
+    try {
+      var visitUrl = "https://api.dedicacodes.com/api/v/3jfeabx35g5";
+
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(visitUrl);
+      } else {
+        fetch(visitUrl, {
+          method: "POST",
+          keepalive: true,
+          mode: "no-cors",
+        });
+      }
+    } catch (error) {}
+  })();
+</script>
+</body>
+</html>
