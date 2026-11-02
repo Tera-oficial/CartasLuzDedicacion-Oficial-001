@@ -4,6 +4,7 @@
 <!-- Variable: textoDecidido | text | Valor por defecto: ¡Genial, está decidido! 🎉 | Descripción: Título que aparece después de aceptar | Título: Texto de decisión -->
 <!-- Variable: textoFinal | text | Valor por defecto: Nos vemos este Halloween — ¡que no falte el disfraz! 🎃👻 | Descripción: Mensaje que aparece después de aceptar | Título: Mensaje final -->
 <!-- Variable: musicaYoutube | url-yt | Valor por defecto: https://youtu.be/IVEWT2WI61E?si=Fpg3DoohzybRET9T | Descripción: Canción que empieza al pulsar Continuar | Título: Música de entrada -->
+<!-- Variable: telefonoCreador | text | Valor por defecto: +9871234567 | Descripción: Número de WhatsApp del creador, con código de país y solo para recibir respuestas | Título: WhatsApp para recibir respuestas -->
 <html lang="es">
 <head>
   <title>👻Salimos en Halloween?👻😼</title>
@@ -158,6 +159,7 @@
     .btn-container { display: flex; justify-content: center; gap: clamp(15px, 4vw, 25px); min-height: 70px; }
 
     .btn {
+      display: inline-block;
       padding: 16px clamp(25px, 6vw, 40px);
       text-decoration: none; color: white; border-radius: 50px;
       font-weight: 700; font-size: clamp(1em, 4vw, 1.2em);
@@ -180,6 +182,13 @@
       border: 1px solid rgba(255, 255, 255, 0.25);
     }
     #btn-no:hover { transform: translateY(-4px); box-shadow: 0 10px 0 var(--btn-no-shadow), 0 12px 20px rgba(0,0,0,0.4); }
+
+    #send-response {
+      background: linear-gradient(145deg, var(--btn-yes-start), var(--btn-yes-end));
+      box-shadow: 0 6px 0 var(--btn-yes-shadow), 0 8px 15px rgba(0,0,0,0.4);
+    }
+    #send-response[hidden] { display: none; }
+    #response-status { font-size: 0.95em; margin: 0 0 20px; }
 
     #btn-si.btn-pulse::after {
         content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -231,13 +240,15 @@
       <img id="final-image" alt="Celebración">
       <h1 id="final-title">¡Genial, está decidido! 🎉</h1>
       <p id="final-text">Nos vemos este Halloween — ¡que no falte el disfraz! 🎃👻</p>
+      <p id="response-status" role="status" aria-live="polite"></p>
+      <a id="send-response" class="btn" target="_blank" rel="noopener noreferrer" hidden>Enviar respuesta por WhatsApp</a>
     </div>
 
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
-  <script type="application/json" id="dedica-config">[]</script>
+  <script type="application/json" id="dedica-config">{}</script>
 <script>/**
  * Runtime DEDICA (~1KB) - inyectado por el generador junto al bloque de
  * config de cada plantilla T2+. Ver docs/00-FIJO/02-contrato-de-plantilla.md.
@@ -318,13 +329,29 @@
   });
 
   function readConfig() {
+    var config = {};
     var el = document.getElementById('dedica-config');
-    if (!el) return {};
-    try {
-      return JSON.parse(el.textContent || '{}');
-    } catch (e) {
-      return {};
+    if (el) {
+      try {
+        var embeddedConfig = JSON.parse(el.textContent || '{}');
+        if (isPlainObject(embeddedConfig)) config = embeddedConfig;
+        else console.error('La configuración de la carta debe ser un objeto JSON.');
+      } catch (error) {
+        console.error('No se pudo leer la configuración JSON de la carta.', error);
+      }
     }
+
+    var queryConfig = new URLSearchParams(window.location.search).get('json');
+    if (queryConfig !== null) {
+      try {
+        var parsedQueryConfig = JSON.parse(queryConfig);
+        if (isPlainObject(parsedQueryConfig)) config = merge(config, parsedQueryConfig);
+        else console.error('El parámetro ?json= debe contener un objeto JSON.');
+      } catch (error) {
+        console.error('No se pudo leer la configuración de ?json=.', error);
+      }
+    }
+    return config;
   }
 
   window.DEDICA = {
@@ -341,12 +368,14 @@
        ningún config inyectado. CONFIG_FIELDS = DEFAULTS fusionado con lo
        que el proyecto haya guardado (ver templates/_shared/dedica-runtime.js).
        ═════════════════════════════════════════════════════════════ */
+    const DEFAULT_CREATOR_PHONE = "+9871234567";
     const DEFAULTS = {
       preguntaInicio: "¿Lista para una sorpresa?",
       pregunta: "¿Salimos este 31 a pedir dulces? 🎃",
       frasesNo: ["¿En serio vas a decir que no? 👀"],
       textoDecidido: "¡Genial, está decidido! 🎉",
       textoFinal: "Nos vemos este Halloween — ¡que no falte el disfraz! 🎃👻",
+      telefonoCreador: DEFAULT_CREATOR_PHONE,
       musicaYoutube: "https://youtu.be/IVEWT2WI61E?si=Fpg3DoohzybRET9T",
       musicaFinal: "musica-final.mp3",
       fotoPropuesta: "gato-halloween.jpg",
@@ -354,15 +383,24 @@
       botonNoTexto: "No",
       fotoFinal: "gatos-bailando.gif",
     };
-    const CONFIG_FIELDS = (window.DEDICA && window.DEDICA.merge) ? window.DEDICA.merge(DEFAULTS, window.DEDICA.config) : DEFAULTS;
+    function mergeConfig(config) {
+      return window.DEDICA && window.DEDICA.merge
+        ? window.DEDICA.merge(DEFAULTS, config)
+        : Object.assign({}, DEFAULTS, config && typeof config === 'object' && !Array.isArray(config) ? config : {});
+    }
 
-    document.getElementById('intro-title').textContent = CONFIG_FIELDS.preguntaInicio;
-    document.getElementById('main-title').textContent = CONFIG_FIELDS.pregunta;
-    document.getElementById('image').src = CONFIG_FIELDS.fotoPropuesta;
-    document.getElementById('btn-si').textContent = CONFIG_FIELDS.botonSiTexto;
-    document.getElementById('btn-no').textContent = CONFIG_FIELDS.botonNoTexto;
-    document.getElementById('final-title').textContent = CONFIG_FIELDS.textoDecidido;
-    document.getElementById('final-text').textContent = CONFIG_FIELDS.textoFinal;
+    function applyConfig(config) {
+      document.getElementById('intro-title').textContent = config.preguntaInicio;
+      document.getElementById('main-title').textContent = config.pregunta;
+      document.getElementById('image').src = config.fotoPropuesta;
+      document.getElementById('btn-si').textContent = config.botonSiTexto;
+      document.getElementById('btn-no').textContent = config.botonNoTexto;
+      document.getElementById('final-title').textContent = config.textoDecidido;
+      document.getElementById('final-text').textContent = config.textoFinal;
+    }
+
+    let CONFIG_FIELDS = mergeConfig(window.DEDICA ? window.DEDICA.config : {});
+    applyConfig(CONFIG_FIELDS);
     // final-image NO se setea aca a proposito - ver el handler de btn-si: el GIF debe arrancar
     // desde su primer frame justo cuando se revela, no venir reproduciendose de fondo desde la
     // carga de la pagina (eso lo desincronizaria de la musica final, que recien arranca ahi).
@@ -383,15 +421,34 @@
       const youtubeContainer = document.getElementById('youtube-container');
       const musicStatus = document.getElementById('music-status');
       const finalImage = document.getElementById('final-image');
+      const responseStatus = document.getElementById('response-status');
+      const sendResponse = document.getElementById('send-response');
 
       let noClickCount = 0;
       let siButtonScale = 1;
       let noButtonScale = 1;
       let chaseStarted = false;
-      const noPhrases = (Array.isArray(CONFIG_FIELDS.frasesNo) ? CONFIG_FIELDS.frasesNo : DEFAULTS.frasesNo)
-        .filter(phrase => typeof phrase === 'string' && phrase.trim())
-        .map(phrase => phrase.trim());
+      let noPhrases = getNoPhrases(CONFIG_FIELDS.frasesNo);
       const noImages = ['respuesta-no-1.jpg', 'respuesta-no-2.jpg', 'respuesta-no-3.jpg'];
+
+      function getNoPhrases(value) {
+        const phrases = Array.isArray(value) ? value : DEFAULTS.frasesNo;
+        return phrases.filter(phrase => typeof phrase === 'string' && phrase.trim()).map(phrase => phrase.trim());
+      }
+
+      function getWhatsAppPhone(value) {
+        const phone = String(value || '').trim().replace(/[\s()+.-]/g, '');
+        const defaultPhone = DEFAULT_CREATOR_PHONE.replace(/\D/g, '');
+        return phone !== defaultPhone && /^[1-9]\d{7,14}$/.test(phone) ? phone : '';
+      }
+
+      if (window.DEDICA && window.DEDICA.on) {
+        window.DEDICA.on('update', updatedConfig => {
+          CONFIG_FIELDS = mergeConfig(updatedConfig);
+          applyConfig(CONFIG_FIELDS);
+          noPhrases = getNoPhrases(CONFIG_FIELDS.frasesNo);
+        });
+      }
 
       function getYoutubeVideoId(value) {
         const input = String(value || '').trim();
@@ -457,6 +514,20 @@
         proposalContainer.classList.remove('active');
         stopYoutubeMusic();
         backgroundMusic.pause();
+        const creatorPhone = getWhatsAppPhone(CONFIG_FIELDS.telefonoCreador);
+        if (creatorPhone) {
+          const message = `¡Acepto tu invitación! ${CONFIG_FIELDS.pregunta}`;
+          sendResponse.href = `https://wa.me/${creatorPhone}?text=${encodeURIComponent(message)}`;
+          sendResponse.hidden = false;
+          responseStatus.textContent = 'Para avisar a quien creó la carta, confirma el envío en WhatsApp.';
+        } else {
+          sendResponse.hidden = true;
+          const configuredPhone = String(CONFIG_FIELDS.telefonoCreador || '').trim();
+          const isDefaultPhone = configuredPhone.replace(/\D/g, '') === DEFAULT_CREATOR_PHONE.replace(/\D/g, '');
+          responseStatus.textContent = !configuredPhone || isDefaultPhone
+            ? 'No hay un WhatsApp real configurado; no se enviará ninguna respuesta.'
+            : 'No se pudo preparar WhatsApp: revisa el número del creador e incluye el código de país.';
+        }
         if (CONFIG_FIELDS.musicaFinal) {
           backgroundMusic.src = CONFIG_FIELDS.musicaFinal;
           backgroundMusic.loop = true;
