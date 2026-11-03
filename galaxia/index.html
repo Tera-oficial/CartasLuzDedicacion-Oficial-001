@@ -1,10 +1,14 @@
 <!DOCTYPE html>
+<!-- Variable: para_quien | text | Valor por defecto: Alguien especial | Título: ¿Para quién es esta carta? | Descripción: Su nombre o cómo le dices -->
+<!-- Variable: frases | array | Valor por defecto: ["Gracias por estar aquí","Eres una persona muy especial","Me alegra tenerte cerca","Cada momento cuenta","Un universo de recuerdos","Siempre es buen momento para sonreír","Lo mejor está por venir","Brillas con luz propia"] | Título: ¿Qué mensajes quieres que orbiten? | Descripción: Escribe varios textos separados por comas o por líneas nuevas -->
+<!-- Variable: fotos | 4image | Valor por defecto: ["https://raw.githubusercontent.com/Tera-oficial/CartasLuzDedicacion-Oficial-001/main/galaxia/img1.webp","https://raw.githubusercontent.com/Tera-oficial/CartasLuzDedicacion-Oficial-001/main/galaxia/img2.webp","https://raw.githubusercontent.com/Tera-oficial/CartasLuzDedicacion-Oficial-001/main/galaxia/img3.webp"] | Título: Fotos para la galaxia | Descripción: Puedes elegir hasta 6 fotos -->
+<!-- Variable: url-yt | url-yt | Valor por defecto: https://www.youtube.com/watch?v=gmUZHkdjlOI | Título: Una canción de fondo | Descripción: Busca y elige la canción que sonará -->
 <html lang="es">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Corazón Galáctico❤️</title>
-<meta name="description" content="Un corazón de partículas flotando en el centro de una galaxia 3D interactiva, rodeado de frases de amor en órbita.">
+<title>Corazón Galáctico</title>
+<meta name="description" content="Un corazón de partículas flotando en el centro de una galaxia 3D interactiva, rodeado de frases en órbita.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%96%3C/text%3E%3C/svg%3E">
 <style>
   @font-face {
@@ -100,6 +104,47 @@
   @media (max-width: 480px) {
     #top-title { font-size: 1.7rem; top: 14px; }
   }
+
+  #music-controls {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 999px;
+    background: rgba(20, 0, 15, 0.55);
+    border: 1px solid rgba(255, 102, 204, 0.35);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 0 20px rgba(255, 51, 153, 0.25);
+  }
+  #music-controls.visible { display: flex; }
+  #music-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 153, 204, 0.5);
+    background: rgba(255, 51, 153, 0.18);
+    color: #ffd6ea;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #music-btn:hover { background: rgba(255, 51, 153, 0.35); }
+  #music-volume {
+    width: 72px;
+    accent-color: #ff3399;
+    cursor: pointer;
+  }
+  @media (max-width: 480px) {
+    #music-controls { right: 12px; bottom: 12px; padding: 8px 10px; }
+    #music-volume { width: 60px; }
+  }
 </style>
 </head>
 <body>
@@ -109,50 +154,208 @@
   <div class="start-heart" aria-hidden="true">❤️</div>
 </div>
 
-<div id="top-title">TE AMO ❤️</div>
+<div id="top-title">Para ti</div>
 
 <canvas id="c"></canvas>
 
-<audio id="audio" loop></audio>
+<div id="youtube-container" style="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;overflow:hidden;z-index:-1"></div>
+
+<div id="music-controls" aria-label="Controles de música">
+  <button id="music-btn" type="button" aria-label="Pausar música">❚❚</button>
+  <input id="music-volume" type="range" min="0" max="100" value="50" aria-label="Volumen de la música">
+</div>
 
 <script src="three.min.js"></script>
 <script>
-  const DEFAULTS = {
-    tapTexto: "Toca para iniciar",
-    titulo: "TE AMO ❤️",
-    frases: [
-      'Eres mi lugar favorito 🏡', 'Contigo todo es mejor ✨', 'Mi felicidad tiene tu nombre 💖',
-      'Amor sin límites ♾️', 'Hasta las estrellas y más allá 🌠', 'Un universo juntos 🌌',
-      'Tú y yo contra el mundo 🌍', 'Magia en cada instante 🪄', 'Mi presente y mi futuro ⏳',
-      'Mi refugio perfecto 🕊️', 'Cada día te elijo a ti 📅', 'Conexión del alma 🔗',
-      'Mi sueño hecho realidad 🌙', 'Para siempre 💍', 'Mi razón de ser 🌟', 'Eres todo 🌹',
-      'Mi otra mitad 🧩', 'Brillas más que cualquier estrella ⭐',
-      'Mi corazón te pertenece ❤️', 'Para toda la eternidad 🪐'
-    ],
-    fotos: ["img1.webp", "img2.webp", "img3.webp"],
-    musica: "sound.mp3"
-  };
-  const CONFIG_FIELDS = DEFAULTS;
+  const DEFAULT_PARA_QUIEN = "Alguien especial";
+  const DEFAULT_FRASES = [
+    "Gracias por estar aquí",
+    "Eres una persona muy especial",
+    "Me alegra tenerte cerca",
+    "Cada momento cuenta",
+    "Un universo de recuerdos",
+    "Siempre es buen momento para sonreír",
+    "Lo mejor está por venir",
+    "Brillas con luz propia"
+  ];
+  const DEFAULT_FOTOS = [
+    "https://raw.githubusercontent.com/Tera-oficial/CartasLuzDedicacion-Oficial-001/main/galaxia/img1.webp",
+    "https://raw.githubusercontent.com/Tera-oficial/CartasLuzDedicacion-Oficial-001/main/galaxia/img2.webp",
+    "https://raw.githubusercontent.com/Tera-oficial/CartasLuzDedicacion-Oficial-001/main/galaxia/img3.webp"
+  ];
+  const DEFAULT_YT_URL = "https://www.youtube.com/watch?v=gmUZHkdjlOI";
 
-  document.getElementById('tap-text').textContent = CONFIG_FIELDS.tapTexto;
-  document.getElementById('top-title').textContent = CONFIG_FIELDS.titulo;
+  const VARS = {
+    para_quien: DEFAULT_PARA_QUIEN,
+    frases: DEFAULT_FRASES,
+    fotos: DEFAULT_FOTOS,
+    "url-yt": DEFAULT_YT_URL
+  };
+
+  (function () {
+    let edits = {};
+    try {
+      const raw = new URLSearchParams(location.search).get("json");
+      if (raw) {
+        try { edits = JSON.parse(raw); }
+        catch (e) { edits = JSON.parse(decodeURIComponent(raw)); }
+      }
+    } catch (e) { edits = {}; }
+    for (const k in edits) {
+      const v = edits[k];
+      if (v !== undefined && v !== null && v !== "") VARS[k] = v;
+    }
+  })();
+
+  function safeText(value, fallback) {
+    const v = (value === undefined || value === null) ? "" : String(value).trim();
+    return v || fallback;
+  }
+
+  function toList(value, fallback) {
+    if (Array.isArray(value)) {
+      const list = value.map(v => String(v == null ? "" : v).trim()).filter(Boolean);
+      return list.length ? list : fallback.slice();
+    }
+    if (typeof value === "string") {
+      const raw = value.trim();
+      if (!raw) return fallback.slice();
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const list = parsed.map(v => String(v == null ? "" : v).trim()).filter(Boolean);
+          if (list.length) return list;
+        }
+      } catch (e) {}
+      const list = raw.split(/\r?\n|,/).map(v => v.trim()).filter(Boolean);
+      return list.length ? list : fallback.slice();
+    }
+    return fallback.slice();
+  }
+
+  function safeHttpUrl(value, fallback) {
+    const raw = (value === undefined || value === null) ? "" : String(value).trim();
+    if (!raw) return fallback;
+    try {
+      const u = new URL(raw, location.href);
+      return (u.protocol === "http:" || u.protocol === "https:") ? u.href : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  const PARA_QUIEN = safeText(VARS.para_quien, DEFAULT_PARA_QUIEN);
+  const FRASES = toList(VARS.frases, DEFAULT_FRASES);
+  const FOTOS = toList(VARS.fotos, DEFAULT_FOTOS).map(u => safeHttpUrl(u, "")).filter(Boolean);
+  const PHOTO_PATHS = FOTOS.length ? FOTOS : DEFAULT_FOTOS.slice();
+  const YT_URL = safeHttpUrl(VARS["url-yt"], DEFAULT_YT_URL);
+
+  document.getElementById('top-title').textContent = PARA_QUIEN === DEFAULT_PARA_QUIEN ? "Para ti" : "Para " + PARA_QUIEN;
 </script>
+<script>
+// ================= Música de YouTube =================
+const DEFAULT_YT_ID = "gmUZHkdjlOI";
+function extractYoutubeId(url) {
+  if (!url) return DEFAULT_YT_ID;
+  const s = String(url).trim();
+  if (/^[\w-]{11}$/.test(s)) return s;
+  const m = s.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=|&v=)([\w-]{11})/);
+  return m ? m[1] : DEFAULT_YT_ID;
+}
+let player = null;
+let playerReady = false;
+let pendingPlay = false;
+const musicControls = document.getElementById('music-controls');
+const musicBtn = document.getElementById('music-btn');
+const musicVolume = document.getElementById('music-volume');
+
+function updateMusicButton() {
+  if (!musicBtn) return;
+  const playing = player && playerReady && player.getPlayerState() === 1;
+  musicBtn.textContent = playing ? "❚❚" : "▶";
+  musicBtn.setAttribute('aria-label', playing ? 'Pausar música' : 'Reproducir música');
+}
+
+function showMusicControls() {
+  if (musicControls) musicControls.classList.add('visible');
+}
+
+window.onYouTubeIframeAPIReady = function () {
+  const id = extractYoutubeId(YT_URL);
+  player = new YT.Player("youtube-container", {
+    height: "0",
+    width: "0",
+    videoId: id,
+    playerVars: { autoplay: 0, controls: 0, loop: 1, playlist: id, playsinline: 1, rel: 0 },
+    events: {
+      onReady: function (e) {
+        e.target.setVolume(Number(musicVolume && musicVolume.value) || 50);
+        playerReady = true;
+        updateMusicButton();
+        if (pendingPlay) {
+          pendingPlay = false;
+          e.target.playVideo();
+        }
+      },
+      onStateChange: updateMusicButton,
+      onError: function () {}
+    }
+  });
+};
+
+function armMusicRetry() {
+  const retry = function () {
+    if (player && playerReady) {
+      if (player.getPlayerState() !== 1) player.playVideo();
+      document.removeEventListener('pointerdown', retry, true);
+      document.removeEventListener('touchstart', retry, true);
+    }
+  };
+  document.addEventListener('pointerdown', retry, true);
+  document.addEventListener('touchstart', retry, true);
+}
+
+function startMusic() {
+  showMusicControls();
+  if (player && playerReady) {
+    player.playVideo();
+  } else {
+    pendingPlay = true;
+    armMusicRetry();
+  }
+}
+
+function toggleMusic() {
+  if (!player || !playerReady) return;
+  if (player.getPlayerState() === 1) {
+    player.pauseVideo();
+  } else {
+    player.playVideo();
+  }
+}
+
+if (musicBtn) {
+  musicBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    toggleMusic();
+  });
+}
+if (musicVolume) {
+  musicVolume.addEventListener('input', function () {
+    if (player && playerReady) player.setVolume(Number(musicVolume.value) || 0);
+  });
+}
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
 // ================= Inicio =================
 const startScreen = document.getElementById('start-screen');
-const audio = document.getElementById('audio');
-audio.src = CONFIG_FIELDS.musica;
-audio.preload = 'auto';
-audio.load();
 
 let experienceStarted = false;
 function unlockAudioAndStart() {
   if (experienceStarted) return;
   experienceStarted = true;
-  const playPromise = audio.play();
-  if (playPromise && typeof playPromise.catch === 'function') {
-    playPromise.catch(err => console.log("Audio no autoplay:", err));
-  }
+  startMusic();
   startScreen.classList.add('hidden');
 }
 startScreen.addEventListener('touchend', (e) => {
@@ -394,9 +597,9 @@ const ring2 = new THREE.Mesh(new THREE.RingGeometry(125, 155, 128), new THREE.Me
 ring1.rotation.x = ring2.rotation.x = Math.PI/2;
 scene.add(ring1); scene.add(ring2);
 
-// Frases (personalizables via CONFIG_FIELDS.frases)
+// Frases (variable editable de tipo array: "frases")
 const WORDS = [];
-const baseWords = (Array.isArray(CONFIG_FIELDS.frases) && CONFIG_FIELDS.frases.length) ? CONFIG_FIELDS.frases : DEFAULTS.frases;
+const baseWords = FRASES;
 
 const PHRASE_REPEAT = isMobile ? 4 : 6;
 for(let i=0; i<PHRASE_REPEAT; i++){ WORDS.push(...baseWords); }
@@ -432,12 +635,7 @@ document.fonts.ready.then(() => {
   }
 });
 
-// Fotos orbitando (campo "gallery" del schema, ver CONFIG_FIELDS.fotos):
-// mismo mecanismo de esferas de sprites que las frases de arriba, portado
-// de freegalaxy-dia-novia (Dia de la Novia) - ahi el tamaño base era
-// 20/28 ("a la escala de las frases" segun su propio comentario), aca se
-// sube a 34/46 a pedido explicito: las fotos se veian demasiado chicas.
-const PHOTO_PATHS = (Array.isArray(CONFIG_FIELDS.fotos) && CONFIG_FIELDS.fotos.length) ? CONFIG_FIELDS.fotos : DEFAULTS.fotos;
+// Fotos orbitando (variable editable de tipo 4image: "fotos")
 const PHOTO_REPEAT = isMobile ? 5 : 8;
 const PHOTO_INSTANCES = [];
 for (let rep = 0; rep < PHOTO_REPEAT; rep++) { PHOTO_INSTANCES.push(...PHOTO_PATHS); }
