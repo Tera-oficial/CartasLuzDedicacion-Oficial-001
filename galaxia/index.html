@@ -36,6 +36,22 @@
     touch-action: none;
   }
   canvas { display: block; }
+  #photo-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .orbit-photo {
+    position: fixed;
+    display: none;
+    max-width: none;
+    object-fit: contain;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    will-change: transform, opacity;
+  }
 
   #start-screen {
     position: fixed;
@@ -157,6 +173,7 @@
 <div id="top-title">Para ti</div>
 
 <canvas id="c"></canvas>
+<div id="photo-layer" aria-hidden="true"></div>
 
 <div id="youtube-container" style="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;overflow:hidden;z-index:-1"></div>
 
@@ -636,7 +653,7 @@ function getOrbitPosition(index, count, phase) {
   return {phi, theta, radius};
 }
 
-const PHRASE_TARGET_COUNT = isMobile ? 220 : 340;
+const PHRASE_TARGET_COUNT = Math.round((isMobile ? 220 : 340) * 1.15);
 const PHRASE_MAX_COUNT = isMobile ? 320 : 480;
 const WORDS = expandToTarget(FRASES, PHRASE_TARGET_COUNT, PHRASE_MAX_COUNT, PHRASE_MAX_COUNT);
 
@@ -689,43 +706,57 @@ document.fonts.ready.then(() => {
 });
 
 // Fotos orbitando (variable editable de tipo 4image: "fotos")
-const PHOTO_TARGET_COUNT = isMobile ? 150 : 220;
+const PHOTO_TARGET_COUNT = Math.round((isMobile ? 150 : 220) * 0.85);
 const PHOTO_MAX_COUNT = isMobile ? 220 : 320;
 const PHOTO_INSTANCES = expandToTarget(PHOTO_PATHS, PHOTO_TARGET_COUNT, PHOTO_MAX_COUNT, PHOTO_MAX_COUNT);
 
-const photoLoader = new THREE.TextureLoader();
 const photoGroup = new THREE.Group(); scene.add(photoGroup);
 const photoBaseSize = isMobile ? 20 : 28;
+const photoLayer = document.getElementById('photo-layer');
+const failedPhotoPaths = new Set();
+const photoProjector = new THREE.Vector3();
+const photoViewPosition = new THREE.Vector3();
 
-Array.from(new Set(PHOTO_INSTANCES)).forEach((path) => {
-  photoLoader.load(path, (tex) => {
-    const iw = (tex.image && tex.image.width) || 1;
-    const ih = (tex.image && tex.image.height) || 1;
-    const ratio = iw / ih;
-    PHOTO_INSTANCES.forEach((instance, index) => {
-      if (instance !== path) return;
-      const mat = new THREE.SpriteMaterial({map: tex, transparent: true, depthWrite: false, opacity: 0.94});
-      const sp = new THREE.Sprite(mat);
-      const size = photoBaseSize * (0.86 + Math.random() * 0.28);
-      if (ratio >= 1) sp.scale.set(size * ratio, size, 1);
-      else sp.scale.set(size, size / ratio, 1);
-      const orbit = getOrbitPosition(index, PHOTO_INSTANCES.length, 1.8);
-      sp.position.set(
-        orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta),
-        orbit.radius * Math.cos(orbit.phi),
-        orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta)
-      );
-      sp.userData = {
-        phi: orbit.phi,
-        theta: orbit.theta,
-        radius: orbit.radius,
-        speed: 0.0005 + Math.random() * 0.0005
-      };
-      photoGroup.add(sp);
-    });
-  }, undefined, (error) => {
-    console.warn("No se pudo cargar una foto de la galaxia:", path, error);
-  });
+PHOTO_INSTANCES.forEach((path, index) => {
+  const image = document.createElement('img');
+  image.className = 'orbit-photo';
+  image.alt = '';
+  image.draggable = false;
+  image.decoding = 'async';
+  image.addEventListener('load', () => {
+    const ratio = image.naturalWidth / image.naturalHeight;
+    if (ratio > 0) image.dataset.aspectRatio = String(ratio);
+  }, {once: true});
+  image.addEventListener('error', () => {
+    image.remove();
+    if (!failedPhotoPaths.has(path)) {
+      failedPhotoPaths.add(path);
+      console.warn("No se pudo mostrar una foto de la galaxia:", path);
+    }
+  }, {once: true});
+  photoLayer.appendChild(image);
+  image.src = path;
+
+  const material = new THREE.SpriteMaterial({transparent: true, depthWrite: false, opacity: 0.94});
+  const sprite = new THREE.Sprite(material);
+  sprite.visible = false;
+  const size = photoBaseSize * (0.86 + Math.random() * 0.28);
+  sprite.scale.set(size, size, 1);
+  const orbit = getOrbitPosition(index, PHOTO_INSTANCES.length, 1.8);
+  sprite.position.set(
+    orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta),
+    orbit.radius * Math.cos(orbit.phi),
+    orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta)
+  );
+  sprite.userData = {
+    phi: orbit.phi,
+    theta: orbit.theta,
+    radius: orbit.radius,
+    speed: 0.0005 + Math.random() * 0.0005,
+    image: image,
+    baseSize: size
+  };
+  photoGroup.add(sprite);
 });
 
 // ================= Controles de Cámara — Rotación Suave Sin Trabas =================
@@ -919,6 +950,46 @@ function tick(){
   const camZ = currentDist * Math.cos(rotX) * Math.cos(rotY);
   camera.position.set(camX, camY, camZ);
   camera.lookAt(0, 0, 0);
+  camera.updateMatrixWorld();
+
+  const pixelsPerUnitAtUnitDepth = innerHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+  photoGroup.children.forEach(sp => {
+    const image = sp.userData.image;
+    if (!image.isConnected || !image.naturalWidth || !image.naturalHeight) return;
+
+    photoProjector.copy(sp.position).project(camera);
+    photoViewPosition.copy(sp.position).applyMatrix4(camera.matrixWorldInverse);
+    const viewDepth = -photoViewPosition.z;
+    if (viewDepth <= 0 || photoProjector.z < -1 || photoProjector.z > 1) {
+      image.style.display = 'none';
+      return;
+    }
+
+    const aspectRatio = Number(image.dataset.aspectRatio) || 1;
+    const pixelsPerUnit = pixelsPerUnitAtUnitDepth / viewDepth;
+    const size = Math.min(
+      pixelsPerUnit,
+      (innerHeight * 0.42) / sp.userData.baseSize,
+      (innerWidth * 0.72) / (sp.userData.baseSize * aspectRatio)
+    );
+    const width = sp.userData.baseSize * aspectRatio * size;
+    const height = sp.userData.baseSize * size;
+    const x = (photoProjector.x + 1) * innerWidth / 2;
+    const y = (1 - photoProjector.y) * innerHeight / 2;
+
+    if (x + width / 2 < 0 || x - width / 2 > innerWidth || y + height / 2 < 0 || y - height / 2 > innerHeight) {
+      image.style.display = 'none';
+      return;
+    }
+
+    image.style.width = width + 'px';
+    image.style.height = height + 'px';
+    image.style.left = x + 'px';
+    image.style.top = y + 'px';
+    image.style.zIndex = String(Math.round((1 - photoProjector.z) * 499));
+    image.style.opacity = String(sp.material.opacity);
+    image.style.display = 'block';
+  });
 
   renderer.render(scene, camera);
 }
